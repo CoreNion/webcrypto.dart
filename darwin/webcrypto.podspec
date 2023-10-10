@@ -23,10 +23,9 @@ Pod::Spec.new do |s|
     'Classes/**/*',
     # Since we can't embed source from ../third_party/, we have created files
     # in ios/third_party/... which simply use #include "../...". This is a hack!
-    'third_party/boringssl/**/*.{c,h}',
+    'third_party/boringssl/**/*.{c,h,S}',
   ]
   s.compiler_flags      = [
-    '-DOPENSSL_NO_ASM',
     '-DDOPENSSL_SMALL',
     '-GCC_WARN_INHIBIT_ALL_WARNINGS',
     '-w',

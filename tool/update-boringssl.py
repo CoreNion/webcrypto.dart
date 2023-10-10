@@ -216,7 +216,15 @@ def writeFakeDarwinSource(g):
         Write fake-source files that each #include "../..." the original source
         file for darwin/
     """
-    for f in sorted(set(g.file_sets['crypto'])):
+    files_to_copy = []
+    # Copy libcrypto sources
+    files_to_copy += g.file_sets['crypto']
+    # Copy Apple ASM files used by libcrypto
+    for ((osname, arch), asm_files) in g.asm_outputs:
+        if (osname == 'apple'):
+            files_to_copy += asm_files
+
+    for f in sorted(set(files_to_copy)):
         target = os.path.join(ROOT_PATH, 'darwin', 'third_party', 'boringssl', f)
         original = os.path.join(ROOT_PATH, 'third_party', 'boringssl', f)
         rel = os.path.relpath(original, os.path.dirname(target))
