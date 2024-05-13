@@ -14,7 +14,7 @@
 
 // ignore_for_file: non_constant_identifier_names
 
-part of impl_js;
+part of 'impl_js.dart';
 
 const _ecdsaAlgorithmName = 'ECDSA';
 
@@ -113,7 +113,7 @@ Future<EcdsaPublicKey> ecdsaPublicKey_importJsonWebKey(
 }
 
 class _EcdsaPrivateKey implements EcdsaPrivateKey {
-  final subtle.CryptoKey _key;
+  final subtle.JSCryptoKey _key;
   _EcdsaPrivateKey(this._key);
 
   @override
@@ -145,7 +145,7 @@ class _EcdsaPrivateKey implements EcdsaPrivateKey {
 }
 
 class _EcdsaPublicKey implements EcdsaPublicKey {
-  final subtle.CryptoKey _key;
+  final subtle.JSCryptoKey _key;
   _EcdsaPublicKey(this._key);
 
   @override

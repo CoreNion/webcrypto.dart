@@ -14,9 +14,9 @@
 
 // ignore_for_file: non_constant_identifier_names
 
-part of impl_js;
+part of 'impl_js.dart';
 
-final _rsassaPkcs1V15Algorithm = subtle.Algorithm(name: 'RSASSA-PKCS1-v1_5');
+const _rsassaPkcs1V15Algorithm = subtle.Algorithm(name: 'RSASSA-PKCS1-v1_5');
 
 Future<RsassaPkcs1V15PrivateKey> rsassaPkcs1V15PrivateKey_importPkcs8Key(
   List<int> keyData,
@@ -89,7 +89,7 @@ Future<RsassaPkcs1V15PublicKey> rsassaPkcs1V15PublicKey_importJsonWebKey(
 }
 
 class _RsassaPkcs1V15PrivateKey implements RsassaPkcs1V15PrivateKey {
-  final subtle.CryptoKey _key;
+  final subtle.JSCryptoKey _key;
   _RsassaPkcs1V15PrivateKey(this._key);
 
   @override
@@ -114,7 +114,7 @@ class _RsassaPkcs1V15PrivateKey implements RsassaPkcs1V15PrivateKey {
 }
 
 class _RsassaPkcs1V15PublicKey implements RsassaPkcs1V15PublicKey {
-  final subtle.CryptoKey _key;
+  final subtle.JSCryptoKey _key;
   _RsassaPkcs1V15PublicKey(this._key);
 
   @override

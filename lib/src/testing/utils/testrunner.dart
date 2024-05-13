@@ -16,7 +16,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:async';
 
-import 'package:test/test.dart' show test;
 import 'package:meta/meta.dart';
 import 'package:webcrypto/webcrypto.dart';
 import 'detected_runtime.dart';
@@ -606,28 +605,32 @@ class TestRunner<PrivateKey, PublicKey> {
     return c.toJson();
   }
 
-  /// Run tests for [testData] using the given [test] function.
+  /// Get test cases from [testData].
   ///
   /// If no [testData] is given the `testData` given when the [TestRunner] was
   /// created will be used.
   ///
-  /// The [test] function must be compatible with `package:test/test.dart`.
-  void runTests({
-    TestFn test = test,
+  /// Returns a list of tuples with test name and test function.
+  List<({String name, Future<void> Function() test})> tests({
     Iterable<Map<dynamic, dynamic>>? testData,
   }) {
+    final tests = <({String name, Future<void> Function() test})>[];
     testData ??= _testData;
     for (final data in testData) {
       final c = _TestCase.fromJson(data);
 
       _runTests(this, c, (String name, FutureOr<void> Function() fn) {
-        // Prefix test names
-        test('$algorithm: ${c.name} -- $name', () async {
-          // Check BoringSSL error stack if running with dart:ffi
-          await checkErrorStack(fn);
-        });
+        tests.add((
+          // Prefix test names
+          name: '$algorithm: ${c.name} -- $name',
+          test: () async {
+            // Check BoringSSL error stack if running with dart:ffi
+            await checkErrorStack(fn);
+          }
+        ));
       });
     }
+    return tests;
   }
 }
 
@@ -806,7 +809,7 @@ void _runTests<PrivateKey, PublicKey>(
       signature = c.signature;
     } else {
       test('create signature', () async {
-        signature = await r._signBytes!(
+        signature = await r._signBytes(
           privateKey as PrivateKey,
           c.plaintext!,
           c.signVerifyParams!,
@@ -835,7 +838,7 @@ void _runTests<PrivateKey, PublicKey>(
       ciphertext = c.ciphertext!;
     } else {
       test('create ciphertext', () async {
-        ciphertext = await r._encryptBytes!(
+        ciphertext = await r._encryptBytes(
           publicKey as PublicKey,
           c.plaintext!,
           c.encryptDecryptParams!,
@@ -863,7 +866,7 @@ void _runTests<PrivateKey, PublicKey>(
       derivedBits = c.derivedBits!;
     } else {
       test('create derivedBits', () async {
-        derivedBits = await r._deriveBits!(
+        derivedBits = await r._deriveBits(
           _KeyPair(
               privateKey: privateKey as PrivateKey,
               publicKey: publicKey as PublicKey),
@@ -874,7 +877,7 @@ void _runTests<PrivateKey, PublicKey>(
     }
 
     test('validated derivedBits', () async {
-      final derived = await r._deriveBits!(
+      final derived = await r._deriveBits(
         _KeyPair(
             privateKey: privateKey as PrivateKey,
             publicKey: publicKey as PublicKey),
@@ -898,7 +901,7 @@ void _runTests<PrivateKey, PublicKey>(
       'failed to verify signature',
     );
     check(
-      !await r._verifyBytes!(
+      !await r._verifyBytes(
         key,
         flipFirstBits(sig),
         c.plaintext!,
@@ -908,7 +911,7 @@ void _runTests<PrivateKey, PublicKey>(
     );
     if (c.plaintext!.isNotEmpty) {
       check(
-        !await r._verifyBytes!(
+        !await r._verifyBytes(
           key,
           sig,
           flipFirstBits(c.plaintext!),
@@ -928,7 +931,7 @@ void _runTests<PrivateKey, PublicKey>(
       // If ciphertext is mangled some primitives like AES-GCM must throw
       // others may return garbled plaintext.
       try {
-        final invalidText = await r._decryptBytes!(
+        final invalidText = await r._decryptBytes(
           key,
           flipFirstBits(ctext),
           c.encryptDecryptParams!,
@@ -971,7 +974,7 @@ void _runTests<PrivateKey, PublicKey>(
       await checkVerifyBytes(publicKey as PublicKey, signature);
     }
     if (r._encryptBytes != null) {
-      final ctext = await r._encryptBytes!(
+      final ctext = await r._encryptBytes(
         publicKey as PublicKey,
         c.plaintext!,
         c.encryptDecryptParams!,
@@ -979,7 +982,7 @@ void _runTests<PrivateKey, PublicKey>(
       await checkCipherText(ctext);
     }
     if (r._deriveBits != null) {
-      final derived = await r._deriveBits!(
+      final derived = await r._deriveBits(
         _KeyPair(
             privateKey: privateKey as PrivateKey,
             publicKey: publicKey as PublicKey),
@@ -994,7 +997,7 @@ void _runTests<PrivateKey, PublicKey>(
   Future<void> checkPrivateKey(PrivateKey? privateKey) async {
     check(privateKey != null, 'privateKey is null');
     if (r._signBytes != null) {
-      final sig = await r._signBytes!(
+      final sig = await r._signBytes(
         privateKey as PrivateKey,
         c.plaintext!,
         c.signVerifyParams!,
@@ -1005,7 +1008,7 @@ void _runTests<PrivateKey, PublicKey>(
       await checkDecryptBytes(privateKey as PrivateKey, ciphertext!);
     }
     if (r._deriveBits != null) {
-      final derived = await r._deriveBits!(
+      final derived = await r._deriveBits(
         _KeyPair(
             privateKey: privateKey as PrivateKey,
             publicKey: publicKey as PublicKey),
@@ -1090,7 +1093,7 @@ void _runTests<PrivateKey, PublicKey>(
 
   if (r._signBytes != null) {
     test('signBytes(plaintext)', () async {
-      final sig = await r._signBytes!(
+      final sig = await r._signBytes(
         privateKey as PrivateKey,
         c.plaintext!,
         c.signVerifyParams!,
@@ -1101,7 +1104,7 @@ void _runTests<PrivateKey, PublicKey>(
 
   if (r._signStream != null) {
     test('signStream(plaintext)', () async {
-      final sig = await r._signStream!(
+      final sig = await r._signStream(
         privateKey as PrivateKey,
         Stream.value(c.plaintext!),
         c.signVerifyParams!,
@@ -1110,7 +1113,7 @@ void _runTests<PrivateKey, PublicKey>(
     });
 
     test('signStream(fibChunked(plaintext))', () async {
-      final sig = await r._signStream!(
+      final sig = await r._signStream(
         privateKey as PrivateKey,
         fibonacciChunkedStream(c.plaintext!),
         c.signVerifyParams!,
@@ -1124,7 +1127,7 @@ void _runTests<PrivateKey, PublicKey>(
   if (r._verifyBytes != null) {
     test('verifyBytes(signature, plaintext)', () async {
       check(
-        await r._verifyBytes!(
+        await r._verifyBytes(
           publicKey as PublicKey,
           signature!,
           c.plaintext!,
@@ -1134,7 +1137,7 @@ void _runTests<PrivateKey, PublicKey>(
       );
 
       check(
-        !await r._verifyBytes!(
+        !await r._verifyBytes(
           publicKey as PublicKey,
           flipFirstBits(signature!),
           c.plaintext!,
@@ -1145,7 +1148,7 @@ void _runTests<PrivateKey, PublicKey>(
 
       if (c.plaintext!.isNotEmpty) {
         check(
-          !await r._verifyBytes!(
+          !await r._verifyBytes(
             publicKey as PublicKey,
             signature!,
             flipFirstBits(c.plaintext!),
@@ -1160,7 +1163,7 @@ void _runTests<PrivateKey, PublicKey>(
   if (r._verifyStream != null) {
     test('verifyStream(signature, Stream.value(plaintext))', () async {
       check(
-        await r._verifyStream!(
+        await r._verifyStream(
           publicKey as PublicKey,
           signature!,
           Stream.value(c.plaintext!),
@@ -1170,7 +1173,7 @@ void _runTests<PrivateKey, PublicKey>(
       );
 
       check(
-        !await r._verifyStream!(
+        !await r._verifyStream(
           publicKey as PublicKey,
           flipFirstBits(signature!),
           Stream.value(c.plaintext!),
@@ -1181,7 +1184,7 @@ void _runTests<PrivateKey, PublicKey>(
 
       if (c.plaintext!.isNotEmpty) {
         check(
-          !await r._verifyStream!(
+          !await r._verifyStream(
             publicKey as PublicKey,
             signature!,
             Stream.value(flipFirstBits(c.plaintext!)),
@@ -1194,7 +1197,7 @@ void _runTests<PrivateKey, PublicKey>(
 
     test('verifyStream(signature, fibChunkedStream(plaintext))', () async {
       check(
-        await r._verifyStream!(
+        await r._verifyStream(
           publicKey as PublicKey,
           signature!,
           fibonacciChunkedStream(c.plaintext!),
@@ -1204,7 +1207,7 @@ void _runTests<PrivateKey, PublicKey>(
       );
 
       check(
-        !await r._verifyStream!(
+        !await r._verifyStream(
           publicKey as PublicKey,
           flipFirstBits(signature!),
           fibonacciChunkedStream(c.plaintext!),
@@ -1215,7 +1218,7 @@ void _runTests<PrivateKey, PublicKey>(
 
       if (c.plaintext!.isNotEmpty) {
         check(
-          !await r._verifyStream!(
+          !await r._verifyStream(
             publicKey as PublicKey,
             signature!,
             fibonacciChunkedStream(flipFirstBits(c.plaintext!)),
@@ -1231,7 +1234,7 @@ void _runTests<PrivateKey, PublicKey>(
 
   if (r._encryptBytes != null) {
     test('encryptBytes(plaintext)', () async {
-      final ctext = await r._encryptBytes!(
+      final ctext = await r._encryptBytes(
         publicKey as PublicKey,
         c.plaintext!,
         c.encryptDecryptParams!,
@@ -1242,7 +1245,7 @@ void _runTests<PrivateKey, PublicKey>(
 
   if (r._encryptStream != null) {
     test('encryptStream(plaintext)', () async {
-      final ctext = await bufferStream(r._encryptStream!(
+      final ctext = await bufferStream(r._encryptStream(
         publicKey as PublicKey,
         Stream.value(c.plaintext!),
         c.encryptDecryptParams!,
@@ -1251,7 +1254,7 @@ void _runTests<PrivateKey, PublicKey>(
     });
 
     test('encryptStream(fibChunked(plaintext))', () async {
-      final ctext = await bufferStream(r._encryptStream!(
+      final ctext = await bufferStream(r._encryptStream(
         publicKey as PublicKey,
         fibonacciChunkedStream(c.plaintext!),
         c.encryptDecryptParams!,
@@ -1264,7 +1267,7 @@ void _runTests<PrivateKey, PublicKey>(
 
   if (r._decryptBytes != null) {
     test('decryptBytes(plaintext)', () async {
-      final text = await r._decryptBytes!(
+      final text = await r._decryptBytes(
         privateKey as PrivateKey,
         ciphertext!,
         c.encryptDecryptParams!,
@@ -1278,7 +1281,7 @@ void _runTests<PrivateKey, PublicKey>(
         // If ciphertext is mangled some primitives like AES-GCM must throw
         // others may return garbled plaintext.
         try {
-          final text2 = await r._decryptBytes!(
+          final text2 = await r._decryptBytes(
             privateKey as PrivateKey,
             flipFirstBits(ciphertext!),
             c.encryptDecryptParams!,
@@ -1296,7 +1299,7 @@ void _runTests<PrivateKey, PublicKey>(
 
   if (r._decryptStream != null) {
     test('decryptStream(Stream.value(ciphertext))', () async {
-      final text = await bufferStream(r._decryptStream!(
+      final text = await bufferStream(r._decryptStream(
         privateKey as PrivateKey,
         Stream.value(ciphertext!),
         c.encryptDecryptParams!,
@@ -1310,7 +1313,7 @@ void _runTests<PrivateKey, PublicKey>(
         // If ciphertext is mangled some primitives like AES-GCM must throw
         // others may return garbled plaintext.
         try {
-          final text2 = await bufferStream(r._decryptStream!(
+          final text2 = await bufferStream(r._decryptStream(
             privateKey as PrivateKey,
             Stream.value(flipFirstBits(ciphertext!)),
             c.encryptDecryptParams!,
@@ -1326,7 +1329,7 @@ void _runTests<PrivateKey, PublicKey>(
     });
 
     test('decryptStream(fibChunkedStream(ciphertext))', () async {
-      final text = await bufferStream(r._decryptStream!(
+      final text = await bufferStream(r._decryptStream(
         privateKey as PrivateKey,
         fibonacciChunkedStream(ciphertext!),
         c.encryptDecryptParams!,
@@ -1340,7 +1343,7 @@ void _runTests<PrivateKey, PublicKey>(
         // If ciphertext is mangled some primitives like AES-GCM must throw
         // others may return garbled plaintext.
         try {
-          final text2 = await bufferStream(r._decryptStream!(
+          final text2 = await bufferStream(r._decryptStream(
             privateKey as PrivateKey,
             fibonacciChunkedStream(flipFirstBits(ciphertext!)),
             c.encryptDecryptParams!,
@@ -1359,7 +1362,7 @@ void _runTests<PrivateKey, PublicKey>(
   //------------------------------ Test derivedBits
   if (r._deriveBits != null) {
     test('deriveBits', () async {
-      final derived = await r._deriveBits!(
+      final derived = await r._deriveBits(
         _KeyPair(
             privateKey: privateKey as PrivateKey,
             publicKey: publicKey as PublicKey),
@@ -1373,7 +1376,7 @@ void _runTests<PrivateKey, PublicKey>(
   //------------------------------ export/import private key
   if (r._exportPrivateRawKey != null) {
     test('export/import raw private key', () async {
-      final keyData = await r._exportPrivateRawKey!(privateKey as PrivateKey);
+      final keyData = await r._exportPrivateRawKey(privateKey as PrivateKey);
       check(keyData.isNotEmpty, 'exported key is empty');
 
       final key = await r._importPrivateRawKey!(keyData, c.importKeyParams!);
@@ -1383,7 +1386,7 @@ void _runTests<PrivateKey, PublicKey>(
 
   if (r._exportPrivatePkcs8Key != null) {
     test('export/import pkcs8 private key', () async {
-      final keyData = await r._exportPrivatePkcs8Key!(privateKey as PrivateKey);
+      final keyData = await r._exportPrivatePkcs8Key(privateKey as PrivateKey);
       check(keyData.isNotEmpty, 'exported key is empty');
 
       final key = await r._importPrivatePkcs8Key!(keyData, c.importKeyParams!);
@@ -1393,7 +1396,7 @@ void _runTests<PrivateKey, PublicKey>(
 
   if (r._exportPrivateJsonWebKey != null) {
     test('export/import jwk private key', () async {
-      final jwk = await r._exportPrivateJsonWebKey!(privateKey as PrivateKey);
+      final jwk = await r._exportPrivateJsonWebKey(privateKey as PrivateKey);
       check(jwk.isNotEmpty, 'exported key is empty');
 
       final key = await r._importPrivateJsonWebKey!(jwk, c.importKeyParams!);
@@ -1407,7 +1410,7 @@ void _runTests<PrivateKey, PublicKey>(
     assert(!r._isSymmetric && r._importPublicRawKey != null);
 
     test('export/import raw public key', () async {
-      final keyData = await r._exportPublicRawKey!(publicKey as PublicKey);
+      final keyData = await r._exportPublicRawKey(publicKey as PublicKey);
       check(keyData.isNotEmpty, 'exported key is empty');
 
       final key = await r._importPublicRawKey!(keyData, c.importKeyParams!);
@@ -1419,7 +1422,7 @@ void _runTests<PrivateKey, PublicKey>(
     assert(!r._isSymmetric && r._importPublicSpkiKey != null);
 
     test('export/import pkcs8 public key', () async {
-      final keyData = await r._exportPublicSpkiKey!(publicKey as PublicKey);
+      final keyData = await r._exportPublicSpkiKey(publicKey as PublicKey);
       check(keyData.isNotEmpty, 'exported key is empty');
 
       final key = await r._importPublicSpkiKey!(keyData, c.importKeyParams!);
@@ -1431,7 +1434,7 @@ void _runTests<PrivateKey, PublicKey>(
     assert(!r._isSymmetric && r._importPublicJsonWebKey != null);
 
     test('export/import jwk public key', () async {
-      final jwk = await r._exportPublicJsonWebKey!(publicKey as PublicKey);
+      final jwk = await r._exportPublicJsonWebKey(publicKey as PublicKey);
       check(jwk.isNotEmpty, 'exported key is empty');
 
       final key = await r._importPublicJsonWebKey!(jwk, c.importKeyParams!);

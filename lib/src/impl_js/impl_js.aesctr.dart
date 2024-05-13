@@ -14,9 +14,9 @@
 
 // ignore_for_file: non_constant_identifier_names
 
-part of impl_js;
+part of 'impl_js.dart';
 
-final _aesCtrAlgorithm = subtle.Algorithm(name: 'AES-CTR');
+const _aesCtrAlgorithm = subtle.Algorithm(name: 'AES-CTR');
 
 Future<AesCtrSecretKey> aesCtr_importRawKey(List<int> keyData) async {
   return _AesCtrSecretKey(await _importKey(
@@ -48,7 +48,7 @@ Future<AesCtrSecretKey> aesCtr_generateKey(int length) async {
 }
 
 class _AesCtrSecretKey implements AesCtrSecretKey {
-  final subtle.CryptoKey _key;
+  final subtle.JSCryptoKey _key;
   _AesCtrSecretKey(this._key);
 
   @override

@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-part of impl_js;
+part of 'impl_js.dart';
 
 void fillRandomBytes(TypedData destination) {
   try {
     subtle.getRandomValues(destination);
-  } on subtle.DomException catch (e) {
+  } on subtle.JSDomException catch (e) {
     throw _translateDomException(e);
   }
 }
