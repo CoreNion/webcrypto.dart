@@ -19,4 +19,6 @@
 // This file is generated using:
 // `tool/update-boringssl.py`
 
+#if (defined(__arm64__) && defined(__APPLE__)) || defined(__aarch64__)
 #include "../../../../../../third_party/boringssl/apple-aarch64/crypto/fipsmodule/ghashv8-armx64.S"
+#endif

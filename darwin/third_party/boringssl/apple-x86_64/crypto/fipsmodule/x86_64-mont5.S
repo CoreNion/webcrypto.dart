@@ -19,4 +19,6 @@
 // This file is generated using:
 // `tool/update-boringssl.py`
 
+#if defined(__x86_64__)
 #include "../../../../../../third_party/boringssl/apple-x86_64/crypto/fipsmodule/x86_64-mont5.S"
+#endif
